@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart URL System</title>
+    <style>
+        body { font-family: Arial; background:#eef2f7; text-align:center; }
+        .box {
+            background:white; padding:25px; margin:30px auto;
+            width:420px; border-radius:10px;
+            box-shadow:0 4px 12px rgba(0,0,0,0.1);
+        }
+        input { width:65%; padding:10px; }
+        button {
+            padding:10px; background:#007bff; color:white;
+            border:none; border-radius:5px; cursor:pointer;
+        }
+        button:hover { background:#0056b3; }
+        .result { margin-top:15px; }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+    <h3>🔗 Shorten URL</h3>
+    <input id="urlInput" placeholder="Enter URL">
+    <button onclick="shorten()">Shorten</button>
+    <div class="result" id="shortResult"></div>
+</div>
+
+<div class="box">
+    <h3>🔁 Redirect URL</h3>
+    <input id="codeInput" placeholder="Enter short code">
+    <button onclick="redirectUrl()">Redirect</button>
+    <div class="result" id="redirectResult"></div>
+</div>
+
+<script>
+function shorten() {
+    let url = document.getElementById("urlInput").value;
+
+    fetch("http://localhost:8081/shorten", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({url:url})
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        document.getElementById("shortResult").innerHTML =
+        `<b>${data.message}</b><br>
+         ${data.shortUrl ? `<a href="${data.shortUrl}" target="_blank">${data.shortUrl}</a>` : ""}<br>
+         Expiry: ${data.expiryDate || "-"}<br>
+         Clicks: ${data.clickCount || 0}`;
+    });
+}
+
+function redirectUrl() {
+    let input = document.getElementById("codeInput").value.trim();
+
+    let code = input.includes("/")
+        ? input.split("/").pop()
+        : input;
+
+    // 🔥 DIRECT REDIRECT (BEST WAY)
+    window.open(`http://localhost:8081/r/${code}`, "_blank");
+
+    // 🔥 FETCH ANALYTICS SEPARATELY
+    fetch(`http://localhost:8081/analytics/${code}`)
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("redirectResult").innerHTML =
+        `✅ Redirected<br>Clicks: ${data.clickCount}`;
+    })
+    .catch(() => {
+        document.getElementById("redirectResult").innerText =
+        "⚠️ Redirected but analytics failed";
+    });
+}
+</script>
+
+</body>
+</html>
